@@ -1,9 +1,43 @@
 import { useState } from 'react'
 import './App.css';
 import StarRatings from 'react-star-ratings';
-import { Multiselect } from "multiselect-react-dropdown";
+import MultiSelect from "react-multi-select-component";
+
 
 function App() {
+  const genreList = [
+    {
+      label: "Action",
+      value: "action"
+    },
+    {
+      label: "Comedy",
+      value: "comedy"
+    },
+    {
+      label: "Thiller",
+      value: "thiller"
+    },
+    {
+      label: "Drama",
+      value: "drama"
+    }
+  ]
+
+
+  const ratingList = [...Array(10).keys()].map((index) => {
+    return ({
+      "label":
+        <StarRatings
+          rating={index + 1}
+          starRatedColor="red"
+          numberOfStars={10}
+          starDimension="15px"
+        />,
+      "value": index + 1
+    })
+  });
+
   const moviesList = [
     {
       "title": "The Matrix",
@@ -30,31 +64,13 @@ function App() {
       "Rating": "7.5",
       "Category": "Drama"
     }]
-  const ratings = [...Array(10).keys()].map((index) => {
-    return {
-      'key': index + 1
-    }
-  })
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [rating, setRating] = useState([])
-  const [genre, setGenre] = useState([])
+  const [ratings, setRatings] = useState([])
+  const [genres, setGenres] = useState([])
 
-  function onSelectGenre(selectedList, selectedItem) {
-    setGenre(selectedList.map((i) => i.Category))
-  }
-
-  function onSelectRating(selectedList, selectedItem) {
-    setRating(selectedList.map((i) => i.key))
-  }
-
-  function onRemoveGenre(selectedList, removedItem) {
-    setGenre(selectedList.map((i) => i.Category))
-  }
-
-  function onRemoveRating(selectedList, removedItem) {
-    setRating(selectedList.map((i) => i.key))
-  }
+  const myRatings = ratings.map((rating) => rating.value)
+  const myGenres = genres.map((genre) => genre.value)
 
   return (
     <div className="App">
@@ -70,43 +86,44 @@ function App() {
               }}
             />
           </div>
-          <div>
-            <Multiselect
-              options={ratings}
-              displayValue="key"
-              showCheckbox={true}
-              placeholderButtonLabel='rating'
-              onSelect={onSelectRating}
-              onRemove={onRemoveRating}
+          <div className="ratingfilter">
+            <MultiSelect
+              options={ratingList}
+              value={ratings}
+              disableSearch={true}
+              onChange={setRatings}
+              valueRenderer = {(selected, _options) => {
+                return selected.length
+                  ? selected.map(({ value }) => value).join(", ")
+                  : "😶 No Items Selected";
+              }}
             />
           </div>
           <div>
-            <Multiselect
-              options={moviesList}
-              displayValue="Category"
-              showCheckbox={true}
-              onSelect={onSelectGenre}
-              onRemove={onRemoveGenre}
+            <MultiSelect
+              options={genreList}
+              value={genres}
+              onChange={setGenres}
             />
           </div>
         </div>
         {moviesList.filter((val) => {
-          if (!rating.length && !genre.length && searchTerm) {
-            if (val.title.toLowerCase().includes(searchTerm.toLowerCase())) {
-              return val;
+          if (searchTerm) {
+            if (!val.title.toLowerCase().includes(searchTerm.toLowerCase())) {
+              return false;
             }
           }
-          else if (searchTerm === "") {
-            return val
-          }
-          else if (val.title.toLowerCase().includes(searchTerm.toLowerCase())) {
-            if (rating.some((index) => index === parseFloat(val.Rating)) && genre.some((index) => index.toLowerCase() === val.Category.toLowerCase())) {
-              return val;
-            }
-            else if (rating.some((index) => index === parseFloat(val.Rating)) || genre.some((index) => index.toLowerCase() === val.Category.toLowerCase())) {
-              return val;
+          if (myRatings.length > 0) {
+            if (!myRatings.some((index) => index === parseFloat(val.Rating))) {
+              return false
             }
           }
+          if (myGenres.length > 0) {
+            if (!myGenres.some((index) => index.toLowerCase() === val.Category.toLowerCase())) {
+              return false
+            }
+          }
+          return true;
         }).map((val) => {
           return (
             <div style={{ border: "1px solid black", margin: "1px" }}>
